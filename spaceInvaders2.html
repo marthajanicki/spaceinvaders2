@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+    <title> Space_Invaders</title>
+<style>
+    body {margin:0; background: #2e294e; display: flex; justify-content: center; align-items: center; height: 100vh}
+    canvas { background: #202030; border: 1px solid #b2ef9b; }
+</style>
+</head>
+<body>
+<canvas id="game" width="480" height="480"></canvas>
+<script>
+  const canvas = document.getElementById ("game");
+  const ctx = canvas.getContext ("2d");
+
+// paddle
+const paddle = { x: canvas.width / 2 -20, y: canvas.height - 40, w: 45, h: 15, speed: 300};
+const balls = [];
+const ball_speed = 500;
+let score = 0;
+const keys = {};
+window.addEventListener("keydown", event => {keys[event.code] = true;})
+window.addEventListener("keyup", event => {keys[event.code] = false;})
+
+// move the paddle
+function update (dt) {
+  if (keys["ArrowLeft"]) paddle.x -= paddle.speed * dt;
+  if (keys["ArrowRight"]) paddle.x += paddle.speed * dt;
+  paddle.x = Math.max(0, Math.min(canvas.width - paddle.w, paddle.x));
+// ball
+  if (keys["Space"] && balls.length === 0) {
+    balls.push ({x: paddle.x + paddle.w / 2 - 2,
+                  y: paddle.y - 10, w: 6, h:10,
+                  vx: (Math.random() *2 - 1) * 200,
+                  vy: -ball_speed });
+    }
+for (let i = balls.length - 1; i >= 0; i--) {
+  const b = balls[i];
+  b.x += b.vx * dt;
+  b.y += b.vy * dt;
+  // bounce off the left, right and top walls
+  if (b.x <=0) {b.x = 0; b.vx = Math.abs(b.vx);}
+  if (b.x + b.w >= canvas.width) {b.x = canvas.width - b.w; b.vx = -Math.abs(b.vx);}
+  if (b.y <= 0) { b.y = 0; b.vy = Math.abs(b.vy);}
+  // bounce off the paddle
+  const onPaddle = b.x + b.w > paddle.x && b.x < paddle.x + paddle.w;
+  if (b.vy > 0 && b.y + b.h >=paddle.y && b.y + b.h <= paddle.y + paddle.h && onPaddle) {
+    b.y = paddle.y - b.h;
+    b.vy = -b.vy;
+    score ++;
+      }
+  // hit the bottom of the screen; ball dies and score resets
+    if (b.y + b.h >= canvas.height) {
+      balls.splice (i, 1);
+      score = 0;
+      }
+}}
+
+
+// draw the board
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#daff7d";
+    ctx.fillRect (paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.fillStyle = "#b2ef9b";
+    for (const b of balls) ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = "#daff7d";
+    ctx.font = "20px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(score, canvas.width - 10, 28);
+      }
+
+// game loop
+  let last = performance.now();
+  function loop(now) {
+    const dt = (now - last) / 1000;
+    last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+      }
+    requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
